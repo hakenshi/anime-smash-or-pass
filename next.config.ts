@@ -1,8 +1,11 @@
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  reactCompiler: true,
+  experimental: {
+    useCache: true,
+    dynamicIO: true,
+  },
 };
 
 export default nextConfig;
