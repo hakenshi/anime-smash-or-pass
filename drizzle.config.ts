@@ -1,8 +1,7 @@
 
 import { defineConfig } from "drizzle-kit";
-import dotenv from "dotenv";
+// Bun automatically loads .env files
 
-dotenv.config();
 
 export default defineConfig({
     schema: "./src/db/schema.ts",
