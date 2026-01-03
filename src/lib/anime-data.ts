@@ -1,4 +1,6 @@
-import { unstable_cache } from "next/cache";
+"use cache";
+
+import { cacheLife } from "next/cache";
 
 const ANILIST_API_URL = "https://graphql.anilist.co";
 
@@ -41,8 +43,6 @@ query ($page: Int, $perPage: Int) {
 }
 `;
 
-// Helper to pick a random page. AniList has thousands of chars.
-// We'll limit to top 50 pages (approx 2500 top characters) to ensure quality.
 const MAX_PAGES = 50;
 
 async function fetchCharactersFromApi() {
@@ -59,15 +59,14 @@ async function fetchCharactersFromApi() {
                 query: QUERY,
                 variables: {
                     page: randomPage,
-                    perPage: 50, // Fetch a batch
+                    perPage: 50,
                 },
             }),
-            next: {
-                revalidate: 3600, // Revalidate every hour at most
-            }
         });
 
         if (!response.ok) {
+            // If 404/500, we don't want to cache this error forever if possible,
+            // but "use cache" might.
             throw new Error(`AniList API returned ${response.status}`);
         }
 
@@ -79,23 +78,19 @@ async function fetchCharactersFromApi() {
     }
 }
 
-// Cached version of the fetcher
-// In a real app, we might want to pre-seed this or use a database to store "seen" characters.
-// For "stupidly fast", we rely on Next.js Data Cache.
-export const getAnimeCharacters = unstable_cache(
-    async () => {
-        return fetchCharactersFromApi();
-    },
-    ["anime-characters-list"], // Cache key
-    {
-        revalidate: 3600, // Revalidate cache every hour
-        tags: ["anime-characters"],
-    }
-);
+export async function getAnimeCharacters() {
+    // Use "hours" profile for long-lived cache
+    // "weeks" | "days" | "hours" | "minutes" | "seconds"
+    cacheLife("hours");
+    return fetchCharactersFromApi();
+}
 
-// Function to get a single random character from the cached batch
 export async function getRandomCharacter() {
+    // This helper doesn't need its own cache if getAnimeCharacters is cached, 
+    // but since "use cache" is file level here (or we can assume its cheap), 
+    // we just call the cached function.
     const characters = await getAnimeCharacters();
+
     if (!characters || characters.length === 0) return null;
 
     const randomIndex = Math.floor(Math.random() * characters.length);
@@ -103,7 +98,6 @@ export async function getRandomCharacter() {
 
     if (!char) return null;
 
-    // Format data for the UI
     return {
         id: char.id,
         name: char.name.full || char.name.native,
