@@ -1,16 +1,32 @@
 
 import { getRandomCharacter } from "@/lib/anime-data";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 
-export async function GET() {
-    const character = await getRandomCharacter();
+export async function GET(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams;
+    const animeId = searchParams.get("animeId");
+    const gender = searchParams.get("gender");
 
-    if (!character) {
-        return NextResponse.json({ error: "Failed to fetch character" }, { status: 500 });
+    const options: { animeId?: number; gender?: string } = {};
+
+    if (animeId) {
+        const id = parseInt(animeId);
+        if (!isNaN(id)) {
+            options.animeId = id;
+        }
     }
 
-    // Set Cache-Control headers to ensure browser respects our server-side caching strategy
-    // stale-while-revalidate for snappy feeling
+    if (gender) {
+        options.gender = gender;
+    }
+
+    const character = await getRandomCharacter(options);
+
+    if (!character) {
+        // If filtering resulted in no characters
+        return NextResponse.json({ error: "No character found with these filters" }, { status: 404 });
+    }
+
     return NextResponse.json(character, {
         headers: {
             "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30",
