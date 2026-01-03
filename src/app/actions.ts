@@ -7,7 +7,17 @@ import { eq, and, count, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
-// ... existing actions ...
+// --- Anime Data Actions ---
+
+export async function searchAnimeAction(query: string) {
+    return await searchAnime(query);
+}
+
+export async function getNextCharacterAction(animeId?: number, gender?: string) {
+    return await getRandomCharacter({ animeId, gender });
+}
+
+// --- Voting & User Actions ---
 
 export async function submitVoteAction(characterData: any, type: "smash" | "pass") {
     const session = await auth.api.getSession({
@@ -18,7 +28,7 @@ export async function submitVoteAction(characterData: any, type: "smash" | "pass
         throw new Error("Unauthorized");
     }
 
-    const userId = session.session.userId; // Better Auth structure
+    const userId = session.session.userId;
     const externalId = characterData.id;
 
     // 1. Ensure Character Exists in DB
@@ -71,7 +81,6 @@ export async function getUserHistoryAction() {
 }
 
 export async function getCharacterStatsAction(externalId: number) {
-    // We need to join with characters table to find the UUID first
     const charRecord = await db.query.characters.findFirst({
         where: eq(characters.externalId, externalId)
     });
