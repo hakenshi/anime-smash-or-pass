@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:alpine
@@ -13,15 +11,5 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
-
-  adminer:
-    image: adminer
-    container_name: anime_smash_adminer
-    restart: always
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
-
 volumes:
   postgres_data:
